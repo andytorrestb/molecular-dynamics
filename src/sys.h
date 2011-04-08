@@ -11,5 +11,7 @@ typedef struct sys {
 sys_t *sys_alloc(size_t n);
 void sys_free(sys_t *s);
 void sys_maxboltz(sys_t *s, double temp);
+int sys_fcc(sys_t *s);
+double sys_temp(sys_t *s);
 
 #endif
