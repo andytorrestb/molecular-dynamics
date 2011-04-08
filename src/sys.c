@@ -6,10 +6,11 @@
 #include "util.h"
 
 // Set up a new system with n particles.
-sys_t *sys_alloc(size_t n) {
+sys_t *sys_alloc(size_t n, double width) {
 	size_t i;
 	sys_t *s = malloc(sizeof(sys_t));
 	s->n = n;
+	s->width = width;
 	for(i = 0; i < 3; i += 1) {
 		s->x[i] = calloc(n, sizeof(double));
 		s->v[i] = calloc(n, sizeof(double));
@@ -49,7 +50,7 @@ int sys_fcc_n(size_t n) {
 		return -1;
 	}
 	k3 = n/4;
-	for(k = 0; k < k3; k += 1) {
+	for(k = 0; k <= k3; k += 1) {
 		if(k*k*k == k3) {
 			return k;
 		}
@@ -60,11 +61,35 @@ int sys_fcc_n(size_t n) {
 // Put the particle positions in an face-centered cubic configuration. Returns false if the number
 // of particles in the system is an invalid number (not of the form 4*k^3).
 int sys_fcc(sys_t *s) {
-	int dim = sys_fcc_n(s->n);
+	int i, j, k, atom, idx = 0, dim;
+	double pos[3][4] = {
+		{0.0, 0.0, 0.5, 0.5},
+		{0.0, 0.5, 0.0, 0.5},
+		{0.0, 0.5, 0.5, 0.0}
+	};
+	double scale;
+	
+	// Check if the system has a valid number of particles
+	dim = sys_fcc_n(s->n);
 	if(dim == -1) {
 		return 0;
 	}
-	// TODO
+	scale = s->width/dim;
+	
+	// Set the position of each atom in each unit cell
+	for(i = 0; i < dim; i += 1) {
+		for(j = 0; j < dim; j += 1) {
+			for(k = 0; k < dim; k += 1) {
+				for(atom = 0; atom < 4; atom += 1) {
+					s->x[0][idx] = (i+pos[0][atom])*scale;
+					s->x[1][idx] = (j+pos[1][atom])*scale;
+					s->x[2][idx] = (k+pos[2][atom])*scale;
+					idx += 1;
+				}
+			}
+		}
+	}
+	return 1;
 }
 
 // Get the temperature of the system.

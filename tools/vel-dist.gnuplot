@@ -1,5 +1,3 @@
-set terminal png
-
 binwidth = 0.5
 bin(x,width) = width*floor(x/width) + binwidth/2
 
