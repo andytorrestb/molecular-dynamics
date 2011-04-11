@@ -43,6 +43,33 @@ void sys_maxboltz(sys_t *s, double temp) {
 			s->v[i][j] *= scale;
 		}
 	}
+	sys_zero_cmvel(s);
+}
+
+// Set the center of mass velocity to 0
+void sys_zero_cmvel(sys_t *s) {
+	size_t i, axis;
+	double vel[3];
+	sys_cmvel(s, &vel[0], &vel[1], &vel[2]);
+	for(i = 0; i < s->n; i += 1) {
+		for(axis = 0; axis < 3; axis += 1) {
+			s->v[axis][i] -= vel[axis];
+		}
+	}
+}
+
+// Get the center of mass velocity
+void sys_cmvel(sys_t *s, double *xout, double *yout, double *zout) {
+	size_t i, axis;
+	double vel[3] = {0.0, 0.0, 0.0};
+	for(i = 0; i < s->n; i += 1) {
+		for(axis = 0; axis < 3; axis += 1) {
+			vel[axis] += s->v[axis][i];
+		}
+	}
+	*xout = vel[0] / s->n;
+	*yout = vel[1] / s->n;
+	*zout = vel[2] / s->n;
 }
 
 // Find the positive integer k such that n = 4*k^3. Returns -1 if there is not such integer.
@@ -134,6 +161,7 @@ void sys_step(sys_t *s, void (*force)(sys_t*), double dt) {
 	for(i = 0; i < s->n; i += 1) {
 		for(axis = 0; axis < 3; axis += 1) {
 			s->v[axis][i] += s->f[axis][i]*dt/2.0;
+			s->x[axis][i] = fmod(s->width + fmod(s->x[axis][i], s->width), s->width);
 		}
 	}
 }

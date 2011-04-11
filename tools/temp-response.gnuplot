@@ -1,7 +1,7 @@
 set xlabel 'Temperature'
 set ylabel 'Energy'
 set logscale x
-a = 1
+a = 0.02
 b = 1
 f(x) = 1/b*log(x/a)
 fit f(x) 'tmp/temp-response.dat' using 1:2 via b, a

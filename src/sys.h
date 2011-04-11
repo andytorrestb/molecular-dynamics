@@ -12,6 +12,8 @@ typedef struct sys {
 sys_t *sys_alloc(size_t n, double width);
 void sys_free(sys_t *s);
 void sys_maxboltz(sys_t *s, double temp);
+void sys_zero_cmvel(sys_t *s);
+void sys_cmvel(sys_t *s, double *xout, double *yout, double *zout);
 int sys_fcc(sys_t *s);
 double sys_temp(sys_t *s);
 double sys_kinetic(sys_t *s);
