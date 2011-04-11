@@ -12,6 +12,8 @@ int print_vel_dist(int n, double temp);
 int print_fcc_pos(int dim);
 int print_lj_pos(int iterations);
 int print_temp_energy(double width, double temp);
+double avg_energy(double density, double temp);
+int print_temp_response(double density, double temp_min, double temp_max, double temp_step);
 
 int main(int argc, char **argv) {
 	srand(time(NULL));
@@ -28,6 +30,9 @@ int main(int argc, char **argv) {
 		}
 		if(argc > 3 && strcmp(argv[1], "--temp-energy") == 0) {
 			return print_temp_energy(atof(argv[2]), atof(argv[3]));
+		}
+		if(argc > 5 && strcmp(argv[1], "--temp-response") == 0) {
+			return print_temp_response(atof(argv[2]), atof(argv[3]), atof(argv[4]), atof(argv[5]));
 		}
 	}
 	
@@ -51,6 +56,10 @@ int main(int argc, char **argv) {
 		"\e[1m--temp-energy \e[4mL\e[0;1m \e[4mT\e[0m\n"
 		"Build an FCC lattice with 32 particles, place the particles in a Maxwell-Boltzmann "
 		"distribution with temperature \e[4mT\e[0m, then evolve the system for 20 time units.\n\n");
+	fprintf(stderr,
+		"\e[1m--temp-response \e[4mdensity\e[0;1m \e[4mTmin\e[0;1m \e[4mTmax\e[0;1m \e[4mTstep\e[0m\n"
+		"Starting with a FCC lattice at a given density, find the response of the total energy to the "
+		"starting temperature.\n\n");
 	return 0;
 }
 
@@ -116,5 +125,34 @@ int print_temp_energy(double width, double temp) {
 	}
 	fprintf(stderr, "Average energy = %12e\n", exp(energy/iterations));
 	sys_free(s);
+	return 0;
+}
+
+double avg_energy(double density, double temp) {
+	int i, iterations = 2500, dim = 2;
+	double dt = 0.004, energy = 0.0;
+	sys_t *s = sys_alloc(4*dim*dim*dim, 4*dim*dim*dim/density);
+	sys_fcc(s);
+	sys_maxboltz(s, temp);
+	for(i = 0; i < iterations; i += 1) {
+		sys_step(s, lj_force, dt);
+		energy += log(sys_kinetic(s) + lj_potential(s));
+	}
+	sys_free(s);
+	return energy/iterations;
+}
+
+int print_temp_response(double density, double temp_min, double temp_max, double temp_step) {
+	int i, ensemble = 1;
+	double temp, energy;
+	printf("%12s %12s\n", "Temperature", "Energy");
+	for(temp = temp_min; temp <= temp_max; temp += temp_step) {
+		energy = 0.0;
+		for(i = 0; i < ensemble; i += 1) {
+			energy += avg_energy(density, temp);
+		}
+		energy /= ensemble;
+		printf("%12f %12e\n", temp, energy);
+	}
 	return 0;
 }
