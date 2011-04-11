@@ -11,7 +11,7 @@
 int print_vel_dist(int n, double temp);
 int print_fcc_pos(int dim);
 int print_lj_pos(int iterations);
-int print_temp_energy(double temp);
+int print_temp_energy(int iterations, int dim, double width, double temp);
 
 int main(int argc, char **argv) {
 	srand(time(NULL));
@@ -25,6 +25,9 @@ int main(int argc, char **argv) {
 		}
 		if(argc > 2 && strcmp(argv[1], "--lj-pos") == 0) {
 			return print_lj_pos(atoi(argv[2]));
+		}
+		if(argc > 5 && strcmp(argv[1], "--temp-energy") == 0) {
+			return print_temp_energy(atoi(argv[2]), atoi(argv[3]), atof(argv[4]), atof(argv[5]));
 		}
 	}
 	
@@ -40,6 +43,10 @@ int main(int argc, char **argv) {
 		"potential and step the system ahead by 0.4 time units (step size of 0.004), "
 		"printing the x coordinate of the each atom at every step. Runs for the given "
 		"number of iterations (`iter`).\n");
+	fprintf(stderr,
+		"--temp-energy iter dim L T: Build a system of size L with dim FCC unit cells in each "
+		"direction, put the particles in a Maxwell-Boltzmann distribution with temperature T, "
+		"then print out the total energy of the system for iter iterations.\n");
 	return 0;
 }
 
@@ -47,6 +54,7 @@ int print_vel_dist(int n, double temp) {
 	size_t i;
 	sys_t *s = sys_alloc(n, 1.0);
 	sys_maxboltz(s, temp);
+	printf("%12s\n", "Velocity");
 	for(i = 0; i < s->n; i += 1) {
 		printf("%12f\n", sqrt(util_sumsq(i, s->v)));
 	}
@@ -58,11 +66,12 @@ int print_fcc_pos(int dim) {
 	size_t i;
 	sys_t *s = sys_alloc(4*dim*dim*dim, 1.0);
 	if(!sys_fcc(s)) {
-		printf("Error generating FCC lattice.\n");
+		fprintf(stderr, "Error generating FCC lattice.\n");
 		return -1;
 	}
+	printf("%12s %12s %12s\n", "X", "Y", "Z");
 	for(i = 0; i < s->n; i += 1) {
-		printf("%12f%12f%12f\n", s->x[0][i], s->x[1][i], s->x[2][i]);
+		printf("%12f %12f %12f\n", s->x[0][i], s->x[1][i], s->x[2][i]);
 	}
 	sys_free(s);
 	return 0;
@@ -70,7 +79,7 @@ int print_fcc_pos(int dim) {
 
 int print_lj_pos(int iterations) {
 	int i;
-	double energy, dt = 0.001;
+	double energy, dt = 0.004;
 	sys_t *s = sys_alloc(2, 10.0);
 	s->x[0][0] = 4;
 	s->x[0][1] = 6;
@@ -79,6 +88,25 @@ int print_lj_pos(int iterations) {
 		sys_step(s, lj_force, dt);
 		energy = sys_kinetic(s) + lj_potential(s);
 		printf("%12f %12f %12f %12f\n", i*dt, s->x[0][0] - 5.0, s->x[0][1] - 5.0, energy);
+	}
+	sys_free(s);
+	return 0;
+}
+
+int print_temp_energy(int iterations, int dim, double width, double temp) {
+	int i;
+	double energy, dt = 0.004;
+	sys_t *s = sys_alloc(4*dim*dim*dim, width);
+	if(!sys_fcc(s)) {
+		fprintf(stderr, "Error generating FCC lattice.\n");
+		return -1;
+	}
+	sys_maxboltz(s, temp);
+	printf("%12s %12s\n", "Time", "Energy");
+	for(i = 0; i < iterations; i += 1) {
+		sys_step(s, lj_force, dt);
+		energy = sys_kinetic(s) + lj_potential(s);
+		printf("%12f %12e\n", i*dt, energy);
 	}
 	sys_free(s);
 	return 0;
