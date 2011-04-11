@@ -5,6 +5,8 @@
 #include "rand.h"
 #include "util.h"
 
+int sys_fcc_n(size_t n);
+
 // Set up a new system with n particles.
 sys_t *sys_alloc(size_t n, double width) {
 	size_t i;
@@ -94,10 +96,44 @@ int sys_fcc(sys_t *s) {
 
 // Get the temperature of the system.
 double sys_temp(sys_t *s) {
+	return 2.0*sys_kinetic(s)/3.0/(s->n-1);
+}
+
+// Get the kinetic energy of the system.
+double sys_kinetic(sys_t *s) {
 	size_t i;
 	double v2 = 0.0;
 	for(i = 0; i < s->n; i += 1) {
 		v2 += util_sumsq(i, s->v);
 	}
-	return v2/3/(s->n-1);
+	return v2/2.0;
+}
+
+// Return the shortest vector from particle i to particle j, taking out to the
+// hypertoroidal topology of the system (periodic boundaries).
+void sys_dist(sys_t *s, int i, int j, double *xout, double *yout, double *zout) {
+	size_t axis;
+	double r, *out[3] = {xout, yout, zout};
+	for(axis = 0; axis < 3; axis += 1) {
+		r = s->x[axis][j] - s->x[axis][i];
+		*out[axis] = r - (int)(r/s->width + (r<0?-0.5:0.5))*s->width;
+	}
+}
+
+// Step the system by dt time units using the provided force accumulation function.
+// The force function should modify the `f` variable in the provided sys_t structure.
+void sys_step(sys_t *s, void (*force)(sys_t*), double dt) {
+	size_t i, axis;
+	for(i = 0; i < s->n; i += 1) {
+		for(axis = 0; axis < 3; axis += 1) {
+			s->x[axis][i] += s->v[axis][i]*dt + s->f[axis][i]*dt*dt/2.0;
+			s->v[axis][i] += s->f[axis][i]*dt/2.0;
+		}
+	}
+	force(s);
+	for(i = 0; i < s->n; i += 1) {
+		for(axis = 0; axis < 3; axis += 1) {
+			s->v[axis][i] += s->f[axis][i]*dt/2.0;
+		}
+	}
 }
