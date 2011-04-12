@@ -15,6 +15,7 @@ sys_t *sys_alloc(size_t n, double width) {
 	s->width = width;
 	for(i = 0; i < 3; i += 1) {
 		s->x[i] = calloc(n, sizeof(double));
+		s->disp[i] = calloc(n, sizeof(double));
 		s->v[i] = calloc(n, sizeof(double));
 		s->f[i] = calloc(n, sizeof(double));
 	}
@@ -26,6 +27,7 @@ void sys_free(sys_t *s) {
 	size_t i;
 	for(i = 0; i < 3; i += 1) {
 		free(s->x[i]);
+		free(s->disp[i]);
 		free(s->v[i]);
 		free(s->f[i]);
 	}
@@ -151,9 +153,12 @@ void sys_dist(sys_t *s, int i, int j, double *xout, double *yout, double *zout) 
 // The force function should modify the `f` variable in the provided sys_t structure.
 void sys_step(sys_t *s, void (*force)(sys_t*), double dt) {
 	size_t i, axis;
+	double tmp;
 	for(i = 0; i < s->n; i += 1) {
 		for(axis = 0; axis < 3; axis += 1) {
-			s->x[axis][i] += s->v[axis][i]*dt + s->f[axis][i]*dt*dt/2.0;
+			tmp = s->v[axis][i]*dt + s->f[axis][i]*dt*dt/2.0;
+			s->x[axis][i] += tmp;
+			s->disp[axis][i] += tmp;
 			s->v[axis][i] += s->f[axis][i]*dt/2.0;
 		}
 	}
@@ -164,4 +169,16 @@ void sys_step(sys_t *s, void (*force)(sys_t*), double dt) {
 			s->x[axis][i] = fmod(s->width + fmod(s->x[axis][i], s->width), s->width);
 		}
 	}
+}
+
+// Find the mean square displacement of the particles in the system.
+double sys_msd(sys_t *s) {
+	size_t i, axis;
+	double sum_dsq = 0.0;
+	for(i = 0; i < s->n; i += 1) {
+		for(axis = 0; axis < 3; axis += 1) {
+			sum_dsq += s->disp[axis][i] * s->disp[axis][i];
+		}
+	}
+	return sum_dsq / s->n;
 }

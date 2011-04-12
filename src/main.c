@@ -14,6 +14,7 @@ int print_lj_pos(int iterations);
 int print_temp_energy(double width, double temp);
 double avg_energy(double density, double temp);
 int print_temp_response(double density, double temp_min, double temp_max, double temp_step);
+int print_avg_msd(double density, double temp_min, double temp_max, double temp_step);
 
 int main(int argc, char **argv) {
 	srand(time(NULL));
@@ -33,6 +34,9 @@ int main(int argc, char **argv) {
 		}
 		if(argc > 5 && strcmp(argv[1], "--temp-response") == 0) {
 			return print_temp_response(atof(argv[2]), atof(argv[3]), atof(argv[4]), atof(argv[5]));
+		}
+		if(argc > 5 && strcmp(argv[1], "--avg-msd") == 0) {
+			return print_avg_msd(atof(argv[2]), atof(argv[3]), atof(argv[4]), atof(argv[5]));
 		}
 	}
 	
@@ -60,6 +64,11 @@ int main(int argc, char **argv) {
 		"\e[1m--temp-response \e[4mdensity\e[0;1m \e[4mTmin\e[0;1m \e[4mTmax\e[0;1m \e[4mTstep\e[0m\n"
 		"Starting with a FCC lattice at a given density, find the response of the total energy to the "
 		"starting temperature.\n\n");
+	fprintf(stderr,
+		"\e[1m--avg-msd \e[4mdensity\e[0;1m \e[4mTmin\e[0;1m \e[4mTmax\e[0;1m \e[4mTstep\e[0m\n"
+		"For each temperature in the range given by [\e[4mTmin\e[0m,\e[4mTmax\e[0m,\e[4mTstep\e[0m], "
+		"set up a FCC lattice at \e[4mdensity\e[0m and find the average over all atoms of the square "
+		"of the atom's displacement from its original position.\n\n");
 	return 0;
 }
 
@@ -153,6 +162,37 @@ int print_temp_response(double density, double temp_min, double temp_max, double
 		}
 		energy /= ensemble;
 		printf("%12f %12e\n", temp, energy);
+	}
+	return 0;
+}
+
+int print_avg_msd(double density, double temp_min, double temp_max, double temp_step) {
+	int i, j, iterations = 250, dim = 2, ensemble = 5;
+	double temp, dt = 0.004, msd;
+	sys_t **s = malloc(ensemble * sizeof(sys_t*));
+	printf("%12s %12s %18s\n", "Temperature", "Time", "Avg. displacement");
+	for(temp = temp_min; temp <= temp_max; temp += temp_step) {
+		for(j = 0; j < ensemble; j += 1) {
+			s[j] = sys_alloc(4*dim*dim*dim, 4*dim*dim*dim/density);
+			sys_fcc(s[j]);
+			sys_maxboltz(s[j], temp);
+		}
+		for(i = 0; i < iterations; i += 1) {
+			for(j = 0; j < ensemble; j += 1) {
+				sys_step(s[j], lj_force, dt);
+			}
+			if(i % 10 == 0) {
+				msd = 0.0;
+				for(j = 0; j < ensemble; j += 1) {
+					msd += sys_msd(s[j]);
+				}
+				msd /= ensemble;
+				printf("%12f %12f %12f\n", temp, i*dt, msd);
+			}
+		}
+		for(j = 0; j < ensemble; j += 1) {
+			sys_free(s[j]);
+		}
 	}
 	return 0;
 }
