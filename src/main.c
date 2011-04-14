@@ -15,6 +15,7 @@ int print_temp_energy(double width, double temp);
 double avg_energy(double density, double temp);
 int print_temp_response(double density, double temp_min, double temp_max, double temp_step);
 int print_avg_msd(double density, double temp_min, double temp_max, double temp_step);
+int print_cmvel(double density, double temp);
 
 int main(int argc, char **argv) {
 	srand(time(NULL));
@@ -37,6 +38,9 @@ int main(int argc, char **argv) {
 		}
 		if(argc > 5 && strcmp(argv[1], "--avg-msd") == 0) {
 			return print_avg_msd(atof(argv[2]), atof(argv[3]), atof(argv[4]), atof(argv[5]));
+		}
+		if(argc > 3 && strcmp(argv[1], "--cm-vel") == 0) {
+			return print_cmvel(atof(argv[2]), atof(argv[3]));
 		}
 	}
 	
@@ -69,6 +73,10 @@ int main(int argc, char **argv) {
 		"For each temperature in the range given by [\e[4mTmin\e[0m,\e[4mTmax\e[0m,\e[4mTstep\e[0m], "
 		"set up a FCC lattice at \e[4mdensity\e[0m and find the average over all atoms of the square "
 		"of the atom's displacement from its original position.\n\n");
+	fprintf(stderr,
+		"\e[1m--cm-vel \e[4mdensity\e[0;1m \e[4mT\e[0m\n"
+		"Center of mass velocity (in each direction) as a function of time, starting in a FCC "
+		"lattice with \e[4mdensity\e[0m and temperature \e[4mT\e[0m.\n\n");
 	return 0;
 }
 
@@ -194,5 +202,21 @@ int print_avg_msd(double density, double temp_min, double temp_max, double temp_
 			sys_free(s[j]);
 		}
 	}
+	return 0;
+}
+
+int print_cmvel(double density, double temp) {
+	int i, iterations = 2500, dim = 2;
+	double dt = 0.004, vx, vy, vz;
+	sys_t *s = sys_alloc(4*dim*dim*dim, 4*dim*dim*dim/density);
+	sys_fcc(s);
+	sys_maxboltz(s, temp);
+	printf("%12s %15s %12s %12s\n", "Time", "CM velocity (X)", "(Y)", "(Z)");
+	for(i = 0; i < iterations; i += 1) {
+		sys_step(s, lj_force, dt);
+		sys_cmvel(s, &vx, &vy, &vz);
+		printf("%12f %15g %12g %12g\n", i*dt, vx, vy, vz);
+	}
+	sys_free(s);
 	return 0;
 }

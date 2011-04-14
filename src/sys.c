@@ -169,6 +169,7 @@ void sys_step(sys_t *s, void (*force)(sys_t*), double dt) {
 			s->x[axis][i] = fmod(s->width + fmod(s->x[axis][i], s->width), s->width);
 		}
 	}
+	sys_zero_cmvel(s);
 }
 
 // Find the mean square displacement of the particles in the system.
