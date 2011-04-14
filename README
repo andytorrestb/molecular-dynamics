@@ -1,0 +1,44 @@
+== Requirements ==
+ - gcc
+ - gnuplot
+ - latex
+
+== Compilation ==
+cd /path/to/project
+make
+make report
+make report # Run twice to resolve references
+
+== Usage ==
+To view usage instructions, just run `./md` in a shell. The available
+simulation commands will be shown.
+
+== Tools ==
+The 'tools' directory contains some premade scripts for plotting the
+data that comes out of the 'md' program. A short description of each
+follows:
+
+ - `./tools/avg-msd.sh`
+   Plots the mean square distance of the particles over time at a
+   range of temperatures (3d plot).
+ 
+ - `./tools/energy-cons.sh`
+   Plot the total energy as a function of time.
+ 
+ - `./tools/fcc-pos.sh`
+   Plot the positions of atoms in a FCC lattice.
+ 
+ - `./tools/lj-pos.sh`
+   Plot the positions of atoms in a simple 2-particle Lennard-Jones
+   potential.
+ 
+ - `./tools/temp-energy.sh`
+   For a single temperature, plot the energy of the system as a
+   function of time.
+ 
+ - `./tools/temp-response.sh`
+   Generate a plot of the energy as a function of temperature.
+   
+ - `./tools/vel-dist.sh`
+   Generate a histogram of a Maxwell-Boltzmann speed distribution.
+
