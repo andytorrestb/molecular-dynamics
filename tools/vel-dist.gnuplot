@@ -1,4 +1,4 @@
-binwidth = 0.5
+binwidth = 0.1
 bin(x,width) = width*floor(x/width) + binwidth/2
 
 set xlabel 'Velocity'

@@ -1,2 +1,2 @@
 #!/bin/sh
-(cat tools/vel-dist.gnuplot; ./md --vel-dist 100000 10.0) | gnuplot -persist
+(cat tools/vel-dist.gnuplot; ./md --vel-dist 100000 0.7) | gnuplot -persist
